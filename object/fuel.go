@@ -12,7 +12,6 @@ import (
 // Fuel object for vehicle
 // Collection where Document fuel stored is defined by fleet UUID
 // like collection name fuel_fleet-uuid
-// @TODO define indexes
 type Fuel struct {
 	ID        bson.ObjectId // id of document in db
 	Vehicle   string        // vehicle uuid
@@ -35,9 +34,10 @@ type Fuel struct {
 type FuelType string
 
 const (
-	DIESEL   = FuelType("DIESEL")
-	GASOLINE = FuelType("GASOLINE")
-	GAS      = FuelType("GAS")
+	DIESEL      = FuelType("DIESEL")
+	GASOLINE    = FuelType("GASOLINE")
+	GAS         = FuelType("GAS")
+	ELECTRICITY = FuelType("ELECTRICITY")
 )
 
 var (
