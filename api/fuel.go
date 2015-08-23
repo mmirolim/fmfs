@@ -47,11 +47,11 @@ func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 
 // get entry
 func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
+	scope := "api.getFuel"
 	fuel := object.Fuel{}
-	id := c.URLParams["id"]
-	err := ds.FindById(&fuel, id)
-	if err != nil {
-		response(w, err, http.StatusNotFound)
+	oid := c.URLParams["oid"]
+	err := ds.FindById(&fuel, oid)
+	if isErr(w, scope, "FindById", err, 404) {
 		return
 	}
 

@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"errors"
 	"fm-fuel-service/object"
 	"strings"
 	"time"
@@ -82,8 +83,11 @@ func FindById(doc Document, id string) error {
 	sess := msess.Copy()
 	defer sess.Close()
 
-	err = getColl(sess, doc).FindId(id).One(doc)
+	if !bson.IsObjectIdHex(id) {
+		return errors.New("id type wrong")
+	}
 
+	err = getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
 	return err
 }
 
