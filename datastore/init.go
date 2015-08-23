@@ -46,8 +46,8 @@ func Initialize(mga MongoAdapter, docs ...Document) error {
 	// set mongo db name
 	mgoDbName = mga.DB()
 
-	// try to connect
-	msess, err = mgo.Dial(mgoHost)
+	// try to connect, set timeout for request
+	msess, err = mgo.DialWithTimeout(mgoHost, time.Second)
 	if err != nil {
 		return err
 	}
