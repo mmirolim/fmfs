@@ -60,3 +60,17 @@ func response(w http.ResponseWriter, data interface{}, status ...int) {
 	// respond
 	fmt.Fprintf(w, res)
 }
+
+// on error prepare response and return true
+func isErr(w http.ResponseWriter, scope, action string, err error, status ...int) bool {
+	if err != nil {
+		code := 500
+		log.Print(scope, action).Error(err)
+		if len(status) == 1 {
+			code = status[0]
+		}
+		response(w, err, code)
+		return true
+	}
+	return false
+}

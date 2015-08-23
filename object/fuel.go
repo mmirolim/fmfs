@@ -51,14 +51,20 @@ func (f Fuel) Location() Geo {
 
 // get entry collection name
 // in form fuel_fleet-uuid if fleet missing return error
-func (f Fuel) Collection() (string, error) {
+func (f Fuel) Collection() string {
 	// check fleet should not be empty
 	if f.Fleet == "" {
-		return f.Fleet, ErrNoFleet
+		return f.Fleet
 	}
-	return fmt.Sprintf("%s_%s", "fuel", f.Fleet), nil
+	return fmt.Sprintf("%s_%s", "fuel", f.Fleet)
 }
 
+// set ObjectID
+func (f *Fuel) SetID(oid bson.ObjectId) {
+	f.ID = oid
+}
+
+// @todo do not use mgo Index type ot not be depended
 // set field which should be indexed
 func (f Fuel) Index() []mgo.Index {
 	return []mgo.Index{
