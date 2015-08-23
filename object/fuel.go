@@ -13,7 +13,7 @@ import (
 // Collection where Document fuel stored is defined by fleet UUID
 // like collection name fuel_fleet-uuid
 type Fuel struct {
-	ID        bson.ObjectId // id of document in db
+	ID        bson.ObjectId `bson:"_id"` // _id of document in db
 	Vehicle   string        // vehicle uuid
 	Fleet     string        // fleet uuid
 	Unit      string        // unit measurment unit L, Gallon
