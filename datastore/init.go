@@ -37,7 +37,7 @@ type DocumentWithLocation interface {
 }
 
 // Initialize datastore package
-func Initialize(mga MongoAdapter) error {
+func Initialize(mga MongoAdapter, docs ...Document) error {
 	var err error
 	// read all mongo hosts and join to one string
 	mgoHost := strings.Join(mga.Hosts(), ",")
@@ -47,8 +47,15 @@ func Initialize(mga MongoAdapter) error {
 
 	// try to connect
 	msess, err = mgo.Dial(mgoHost)
-
+	if err != nil {
+		return err
+	}
 	// init indexes set for collections
+	for _, doc := range docs {
+		if err := EnsureIndex(doc); err != nil {
+			return err
+		}
+	}
 
 	return err
 }

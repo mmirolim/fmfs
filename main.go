@@ -6,6 +6,7 @@ import (
 	"fm-fuel-service/conf"
 	"fm-fuel-service/datastore"
 	"fm-fuel-service/log"
+	"fm-fuel-service/object"
 
 	"github.com/zenazn/goji"
 )
@@ -18,7 +19,7 @@ func init() {
 	appConf.DS.Mongo.SetHosts("localhost:27017")
 	appConf.DS.Mongo.SetDB("fuel")
 	// init datastore
-	err := datastore.Initialize(appConf.DS.Mongo)
+	err := datastore.Initialize(appConf.DS.Mongo, &object.Fuel{})
 	if err != nil {
 		log.Print("main.init", "datasore.Initialize").Fatal(err)
 	}

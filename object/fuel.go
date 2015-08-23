@@ -2,7 +2,6 @@ package object
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"gopkg.in/mgo.v2"
@@ -22,7 +21,7 @@ type Fuel struct {
 	Info      string        // extra information
 	TotalCost float32       // total cost of fuel
 	Currency  string        // currency of cost
-	Date      time.Time     // when fuel filled
+	FillDate  time.Time     // when fuel filled
 	Partial   bool          // is it partial or fuel tank filled
 	Vendor    string        // which gas station Lukoil, sibneft
 	Geo                     // geo location of fuel filled
@@ -52,11 +51,7 @@ func (f Fuel) Location() Geo {
 // get entry collection name
 // in form fuel_fleet-uuid if fleet missing return error
 func (f Fuel) Collection() string {
-	// check fleet should not be empty
-	if f.Fleet == "" {
-		return f.Fleet
-	}
-	return fmt.Sprintf("%s_%s", "fuel", f.Fleet)
+	return "fuel"
 }
 
 // set ObjectID
@@ -75,7 +70,7 @@ func (f Fuel) Index() []mgo.Index {
 			Key: []string{"fleet"}, // actually fuel entries fill be in collection with fleet namespace so it is not required
 		},
 		mgo.Index{
-			Key: []string{"date"}, // index date of fuel filled for reports and daily graphs
+			Key: []string{"filldate"}, // index date of fuel filled for reports and daily graphs
 		},
 		mgo.Index{
 			Key: []string{"$2dsphere:loc"}, // add index for location search

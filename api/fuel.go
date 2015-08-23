@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	ds "fm-fuel-service/datastore"
-	"fm-fuel-service/log"
 	"fm-fuel-service/object"
 	"fmt"
 	"net/http"
@@ -18,7 +17,6 @@ func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	var fuel object.Fuel
 	scope := "api.addFuel"
 	// parse post data and decode to fuel object
-	log.Print(scope, "register decoder").Debug(r.Body)
 	err := json.NewDecoder(r.Body).Decode(&fuel)
 	if isErr(w, scope, "decode r.Body", err, 400) {
 		return

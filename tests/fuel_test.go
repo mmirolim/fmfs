@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func TestAddFuelApi(t *testing.T) {
@@ -15,7 +16,7 @@ func TestAddFuelApi(t *testing.T) {
 
 	fuel.Fleet = "ALKF-DLFK-DFLJ-DLFKJ"
 	fuel.Vehicle = "ALKF-DLFK-ASDL-DLFKJ"
-
+	fuel.FillDate = time.Now()
 	var load bytes.Buffer
 	err := json.NewEncoder(&load).Encode(fuel)
 	if err != nil {
