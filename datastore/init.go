@@ -82,7 +82,8 @@ func FindById(doc Document, id string) error {
 
 	sess := msess.Copy()
 	defer sess.Close()
-
+	// before queries check is id fits otherwise
+	// it panics
 	if !bson.IsObjectIdHex(id) {
 		return errors.New("id type wrong")
 	}
