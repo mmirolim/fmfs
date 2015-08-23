@@ -1,44 +1,45 @@
 package tests
 
 import (
-	"bytes"
 	"encoding/json"
 	"fm-fuel-service/object"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"testing"
 	"time"
+)
+
+var (
+	apiAddFuel    = apiEndpoint{"POST", "/fuel"}
+	apiModifyFuel = apiEndpoint{"POST", "/fuel/:id"}
 )
 
 func TestAddFuelApi(t *testing.T) {
 	var fuel object.Fuel
 
+	// set some default data
 	fuel.Fleet = "ALKF-DLFK-DFLJ-DLFKJ"
 	fuel.Vehicle = "ALKF-DLFK-ASDL-DLFKJ"
 	fuel.FillDate = time.Now()
-	var load bytes.Buffer
-	err := json.NewEncoder(&load).Encode(fuel)
-	if err != nil {
-		t.Error(err)
-	}
-	req, err := http.NewRequest("POST", "http://localhost:4001/fuel", &load)
-	req.Header.Add("Content-Type", "application/json")
-
-	// disable keep alive in client, too make new connection each time
-	// if not disabled, there is error EOF
-	client := &http.Client{
-		Transport: &http.Transport{DisableKeepAlives: true},
-	}
-
-	res, err := client.Do(req)
+	// do request to working api server
+	body, err := jsonReq(apiAddFuel, fuel)
 	if err != nil {
 		t.Error(err)
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	fuelReceived := object.Fuel{}
+	if err := json.Unmarshal(body, &fuelReceived); err != nil {
+		t.Error(err)
+	}
+}
 
+func TestModifyFuelApi(t *testing.T) {
+	var fuel object.Fuel
+
+	fuel.Fleet = "ALKF-DLFK-DFLJ-DLFKJ"
+	fuel.Vehicle = "ALKF-DLFK-ASDL-DLFKJ"
+	fuel.FillDate = time.Now()
+
+	// send fuel json object
+	body, err := jsonReq(apiModifyFuel, fuel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -47,7 +48,5 @@ func TestAddFuelApi(t *testing.T) {
 	if err := json.Unmarshal(body, &fuelReceived); err != nil {
 		t.Error(err)
 	}
-
-	fmt.Printf("%+v\n", fuelReceived)
 
 }

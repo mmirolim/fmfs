@@ -106,6 +106,22 @@ func Save(doc Document) error {
 	return err
 }
 
+// update document by id
+func UpdateById(doc Document, id string) error {
+	var err error
+
+	sess := msess.Copy()
+	defer sess.Close()
+	// before queries check is id fits otherwise
+	// it panics
+	if !bson.IsObjectIdHex(id) {
+		return errors.New("id type wrong")
+	}
+
+	err = getColl(sess, doc).UpdateId(bson.ObjectIdHex(id), doc)
+	return err
+}
+
 // return mongo Collection
 func getColl(sess *mgo.Session, doc Document) *mgo.Collection {
 	return sess.DB(mgoDbName).C(doc.Collection())

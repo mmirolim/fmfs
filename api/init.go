@@ -16,7 +16,8 @@ func New() *web.Mux {
 
 	// set all routes for fuel object
 	m.Post("/fuel", addFuel)
-	m.Patch("/fuel/:oid", modifyFuel)
+	// @todo maybe to use Patch, but should be tested first
+	m.Post("/fuel/:oid", modifyFuel)
 	m.Delete("/fuel/:oid", delFuel)
 	m.Get("/fuel/:oid", getFuel)
 	m.Get("/vehicle/:uid", getVehicleFuelInPeriod)
