@@ -14,7 +14,8 @@ import (
 var (
 	mgoDbName string
 	// @todo use singleton or sync.Once
-	msess *mgo.Session // mongo session
+	msess       *mgo.Session // mongo session
+	ErrObjectId = errors.New("id type wrong")
 )
 
 type MongoAdapter interface {
@@ -38,8 +39,7 @@ type DocumentWithLocation interface {
 }
 
 // Initialize datastore package
-func Initialize(mga MongoAdapter, docs ...Document) error {
-	var err error
+func Initialize(mga MongoAdapter, docs ...Document) (err error) {
 	// read all mongo hosts and join to one string
 	mgoHost := strings.Join(mga.Hosts(), ",")
 
@@ -49,16 +49,16 @@ func Initialize(mga MongoAdapter, docs ...Document) error {
 	// try to connect, set timeout for request
 	msess, err = mgo.DialWithTimeout(mgoHost, time.Second)
 	if err != nil {
-		return err
+		return
 	}
 	// init indexes set for collections
 	for _, doc := range docs {
-		if err := EnsureIndex(doc); err != nil {
-			return err
+		if err = EnsureIndex(doc); err != nil {
+			return
 		}
 	}
 
-	return err
+	return
 }
 
 // ensures index in collection created
@@ -78,48 +78,42 @@ func EnsureIndex(doc Document) error {
 
 // find one document by id
 func FindById(doc Document, id string) error {
-	var err error
-
-	sess := msess.Copy()
-	defer sess.Close()
 	// before queries check is id fits otherwise
 	// it panics
 	if !bson.IsObjectIdHex(id) {
-		return errors.New("id type wrong")
+		return ErrObjectId
 	}
 
-	err = getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
-	return err
+	sess := msess.Copy()
+	defer sess.Close()
+
+	return getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
 }
 
 // save docuemnt to storage
 func Save(doc Document) error {
-	var err error
 
 	sess := msess.Copy()
 	defer sess.Close()
 
 	// set ObjectId
 	doc.SetID(bson.NewObjectId())
-	err = getColl(sess, doc).Insert(doc)
+	return getColl(sess, doc).Insert(doc)
 
-	return err
 }
 
 // update document by id
 func UpdateById(doc Document, id string) error {
-	var err error
-
-	sess := msess.Copy()
-	defer sess.Close()
 	// before queries check is id fits otherwise
 	// it panics
 	if !bson.IsObjectIdHex(id) {
-		return errors.New("id type wrong")
+		return ErrObjectId
 	}
 
-	err = getColl(sess, doc).UpdateId(bson.ObjectIdHex(id), doc)
-	return err
+	sess := msess.Copy()
+	defer sess.Close()
+
+	return getColl(sess, doc).UpdateId(bson.ObjectIdHex(id), doc)
 }
 
 // return mongo Collection
