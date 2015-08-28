@@ -23,6 +23,7 @@ func TestAddFuelApi(t *testing.T) {
 	body, err := jsonReq(apiAddFuel, fuel)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	fuelReceived := object.Fuel{}
@@ -42,6 +43,7 @@ func TestModifyFuelApi(t *testing.T) {
 	body, err := jsonReq(apiModifyFuel, fuel)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	fuelReceived := object.Fuel{}
 
