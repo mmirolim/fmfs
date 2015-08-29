@@ -6,3 +6,5 @@
 *.#*
 goapp
 *.test
+*.cpu
+*.mem
