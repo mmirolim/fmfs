@@ -4,6 +4,7 @@
 *.*~
 *.*#
 *.#*
+fm-fuel-service
 goapp
 *.test
 *.cpu
