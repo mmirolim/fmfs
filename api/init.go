@@ -70,21 +70,25 @@ func response(w http.ResponseWriter, data interface{}, status ...int) {
 }
 
 // on error prepare response and return true
-func isErr(w http.ResponseWriter, scope, action string, err error, status ...int) bool {
+func isErr(w http.ResponseWriter, r *http.Request, action string, err error, respStatus ...int) bool {
 	if err == nil {
 		return false
 	}
-	code := http.StatusInternalServerError
+
+	// get request method and url escaped path as err scope
+	scope := r.Method + ">>" + r.URL.EscapedPath()
+	// set default status
+	status := http.StatusInternalServerError
 	// set status code according to
 	// err type/msg
 	switch {
 	case err == ds.ErrNotFound:
-		code = http.StatusNotFound
-	case len(status) == 1:
+		status = http.StatusNotFound
+	case len(respStatus) == 1:
 		// use provided code status
-		code = status[0]
+		status = respStatus[0]
 	}
-	response(w, err, code)
+	response(w, err, status)
 
 	log.Print(scope, action).Error(err)
 	return true

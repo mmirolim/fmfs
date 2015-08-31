@@ -15,10 +15,9 @@ import (
 
 // add new fuel entry
 func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
-	scope := "api.addFuel"
 	// parse post data and decode to fuel object
 	fuel, err := decodeFuel(r.Body)
-	if isErr(w, scope, "decode r.Body", err, 400) {
+	if isErr(w, r, "decode r.Body", err) {
 		return
 	}
 	//@todo get uid from jwt
@@ -27,7 +26,7 @@ func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel.Created(uid)
 	// save object
 	err = ds.Save(&fuel)
-	if isErr(w, scope, "save fuel", err) {
+	if isErr(w, r, "save fuel", err) {
 		return
 	}
 
@@ -36,17 +35,16 @@ func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 
 // modify entry
 func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
-	scope := "api.modifyFuel"
 	oid := c.URLParams["oid"]
 	fuel, err := decodeFuel(r.Body)
-	if isErr(w, scope, "decode r.Body", err) {
+	if isErr(w, r, "decode r.Body", err) {
 		return
 	}
 	//@todo get uid from jwt
 	uid := "QOIO-EOIL-EIRU-JLKL"
 	fuel.Updated(uid)
 	err = ds.UpdateById(&fuel, oid)
-	if isErr(w, scope, "ds.UpdateById", err) {
+	if isErr(w, r, "ds.UpdateById", err) {
 		return
 	}
 
@@ -56,14 +54,13 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 // delete entry, soft delete used
 // object not removed from storage
 func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
-	scope := "api.defFuel"
 	fuel := object.Fuel{}
 	oid := c.URLParams["oid"]
 	//@todo get uid from jwt
 	uid := "QOIO-EOIL-EIRU-JLKL"
 	fuel.Deleted(uid)
 	err := ds.UpdateById(&fuel, oid)
-	if isErr(w, scope, "UpdateById", err) {
+	if isErr(w, r, "UpdateById", err) {
 		return
 	}
 
@@ -72,11 +69,10 @@ func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 
 // get entry
 func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
-	scope := "api.getFuel"
 	fuel := object.Fuel{}
 	oid := c.URLParams["oid"]
 	err := ds.FindById(&fuel, oid)
-	if isErr(w, scope, "FindById", err) {
+	if isErr(w, r, "FindById", err) {
 		return
 	}
 
