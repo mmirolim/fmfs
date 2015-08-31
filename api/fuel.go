@@ -11,6 +11,11 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
+var (
+	//@todo get uid from jwt
+	uid = "QOIO-EOIL-EIRU-JLKL"
+)
+
 // goji handlers for fuel object
 
 // add new fuel entry
@@ -20,8 +25,6 @@ func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	if isErr(w, r, "decode r.Body", err) {
 		return
 	}
-	//@todo get uid from jwt
-	uid := "QOIO-EOIL-EIRU-JLKL"
 	// set created time and user
 	fuel.Created(uid)
 	// save object
@@ -61,6 +64,18 @@ func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel.Deleted(uid)
 	err := ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "UpdateById", err) {
+		return
+	}
+
+	response(w, http.StatusNoContent)
+}
+
+// delete entry, soft delete used
+// object not removed from storage
+func delFuelFromStorage(c web.C, w http.ResponseWriter, r *http.Request) {
+	oid := c.URLParams["oid"]
+	err := ds.DelById(&object.Fuel{}, oid)
+	if isErr(w, r, "DelById", err) {
 		return
 	}
 

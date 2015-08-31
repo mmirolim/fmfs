@@ -19,8 +19,10 @@ func New() *web.Mux {
 	// @todo maybe to use Patch, but should be tested first
 	// modify also used to soft delete object
 	m.Post("/fuel/:oid", modifyFuel)
-	// complete remove object from storage
+	// soft delete object
 	m.Delete("/fuel/:oid", delFuel)
+	// delete fuel entry from storage
+	m.Delete("fuel-entries/:oid", delFuelFromStorage)
 	// get on fuel entry
 	m.Get("/fuel/:oid", getFuel)
 	// get all fuel entries for particular vehicle
@@ -49,9 +51,17 @@ func response(w http.ResponseWriter, data interface{}, status ...int) {
 	// struct depends on concrete type of data
 	switch v := data.(type) {
 	case string:
+		// if custom string passed
 		data = struct{ Msg string }{v}
 	case error:
+		// if err passed
 		data = struct{ Err string }{v.Error()}
+	case int:
+		// if http status passed as data for response
+		data = struct{ Msg int }{v}
+	default:
+		// if type we do not expect show as it is
+		data = struct{ Data interface{} }{v}
 	}
 	// json encode data
 	b, err := json.Marshal(data)
@@ -61,7 +71,7 @@ func response(w http.ResponseWriter, data interface{}, status ...int) {
 	} else {
 		res = string(b)
 	}
-	// check if status code set
+	// check if status code explicitly provided
 	if len(status) == 1 {
 		w.WriteHeader(status[0])
 	}

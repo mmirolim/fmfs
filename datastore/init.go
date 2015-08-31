@@ -80,8 +80,6 @@ func EnsureIndex(doc Document) error {
 
 // find one document by id
 func FindById(doc Document, id string) error {
-	var err error
-
 	sess := msess.Copy()
 	defer sess.Close()
 	// before queries check is id fits otherwise
@@ -90,28 +88,21 @@ func FindById(doc Document, id string) error {
 		return errors.New("id type wrong")
 	}
 
-	err = getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
-	return err
+	return getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
 }
 
 // save docuemnt to storage
 func Save(doc Document) error {
-	var err error
-
 	sess := msess.Copy()
 	defer sess.Close()
 
 	// set ObjectId
 	doc.SetID(bson.NewObjectId())
-	err = getColl(sess, doc).Insert(doc)
-
-	return err
+	return getColl(sess, doc).Insert(doc)
 }
 
 // update document by id
 func UpdateById(doc Document, id string) error {
-	var err error
-
 	sess := msess.Copy()
 	defer sess.Close()
 	// before queries check is id fits otherwise
@@ -120,8 +111,24 @@ func UpdateById(doc Document, id string) error {
 		return errors.New("id type wrong")
 	}
 
-	err = getColl(sess, doc).UpdateId(bson.ObjectIdHex(id), doc)
-	return err
+	return getColl(sess, doc).UpdateId(bson.ObjectIdHex(id), doc)
+}
+
+// delete document from storage
+
+// save docuemnt to storage
+func DelById(doc Document, id string) error {
+	sess := msess.Copy()
+	defer sess.Close()
+
+	// before queries check is id fits otherwise
+	// it panics
+	if !bson.IsObjectIdHex(id) {
+		return errors.New("id type wrong")
+	}
+
+	return getColl(sess, doc).RemoveId(bson.ObjectIdHex(id))
+
 }
 
 // return mongo Collection
