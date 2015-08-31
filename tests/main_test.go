@@ -3,14 +3,39 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 )
 
 type apiEndpoint struct {
 	Method, Url string
+}
+
+// copy api endpoint, do not change default
+func (ae apiEndpoint) copy() apiEndpoint {
+	return ae
+}
+
+// add suffix for Url param
+func (ae *apiEndpoint) suffix(str string) {
+	ae.Url = ae.Url + str
+}
+
+// add url params
+func (ae *apiEndpoint) params(m map[string]interface{}) {
+	var params string
+	// create url params string with &key=value from provided map
+	for k, v := range m {
+		params += fmt.Sprintf("&%v=%v", k, v)
+	}
+	// remove first &
+	params = strings.Replace(params, "&", "", 1)
+	ae.Url = ae.Url + "?" + params
+
 }
 
 func TestMain(m *testing.M) {
@@ -48,4 +73,22 @@ func jsonReq(ae apiEndpoint, load interface{}, host ...string) ([]byte, error) {
 	res.Body.Close()
 
 	return body, err
+}
+
+// expect func to compare and stop execution of test
+func expectInt(t *testing.T, arg1, arg2 int, msg string) bool {
+	if arg1 == arg2 {
+		return true
+	}
+	t.Errorf("expected %s %s, got %s", msg, arg1, arg2)
+	return false
+}
+
+// expect func to compare and stop execution of test
+func expectStr(t *testing.T, arg1, arg2 string, msg string) bool {
+	if arg1 == arg2 {
+		return true
+	}
+	t.Errorf("expected %s %s, got %s", msg, arg1, arg2)
+	return false
 }

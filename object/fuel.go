@@ -15,7 +15,7 @@ type Fuel struct {
 	ID        bson.ObjectId `bson:"_id"` // _id of document in db
 	Vehicle   string        // vehicle uuid
 	Fleet     string        // fleet uuid
-	Unit      string        // unit measurment unit L, Gallon
+	FuelUnit                // unit measurment unit Litres, Gallon
 	Amount    int           // Number of units
 	TankSize  int           // fuel tank size in vehicle
 	Info      string        // extra information
@@ -32,11 +32,20 @@ type Fuel struct {
 // define custom type for Fuel Types
 type FuelType string
 
+// define units
+// @todo temp solution actually it should be
+// taken from some service with all possible
+// liquid measuring units
+type FuelUnit string
+
 const (
 	DIESEL      = FuelType("DIESEL")
 	GASOLINE    = FuelType("GASOLINE")
 	GAS         = FuelType("GAS")
 	ELECTRICITY = FuelType("ELECTRICITY")
+
+	LITRES  = FuelUnit("LITRES")
+	GALLONS = FuelUnit("GALLONS")
 )
 
 var (
