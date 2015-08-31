@@ -22,7 +22,7 @@ func New() *web.Mux {
 	// soft delete object
 	m.Delete("/fuel/:oid", delFuel)
 	// delete fuel entry from storage
-	m.Delete("fuel-entries/:oid", delFuelFromStorage)
+	m.Delete("/fuel-entries/:oid", delFuelFromStorage)
 	// restore soft deleted object
 	m.Post("/fuel-entries/:oid", unDelFuel)
 	// get on fuel entry

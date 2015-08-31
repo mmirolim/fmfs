@@ -172,6 +172,35 @@ func TestUnDelFuel(t *testing.T) {
 
 }
 
+// completely remove object from storage
+// test undel soft deleted entry
+func TestDelFuelFromStorage(t *testing.T) {
+	// create new entry
+	fuel, err := addFuel()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// make api request to soft del it
+	api := apiDelFromStorage.copy()
+	api.suffix(fuel.ID.Hex())
+	body, err := jsonReq(api, fuel)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	var data struct{ StatusCode int }
+	if err := json.Unmarshal(body, &data); err != nil {
+		t.Error(err)
+		return
+	}
+	// check for correct response
+	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+		return
+	}
+}
+
 // request to add fuel entry to api
 // with passed fuel entry and return received
 // object
