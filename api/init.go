@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	ds "fm-fuel-service/datastore"
 	"fm-fuel-service/log"
 	"fmt"
 	"net/http"
@@ -10,17 +11,23 @@ import (
 )
 
 func New() *web.Mux {
-	log.Print("api.Start", "some action").Debug("logging something")
 	// WARNING more specific routes should be first then more general
 	m := web.New()
 
 	// set all routes for fuel object
 	m.Post("/fuel", addFuel)
 	// @todo maybe to use Patch, but should be tested first
+	// modify also used to soft delete object
 	m.Post("/fuel/:oid", modifyFuel)
+	// complete remove object from storage
 	m.Delete("/fuel/:oid", delFuel)
+	// get on fuel entry
 	m.Get("/fuel/:oid", getFuel)
+	// get all fuel entries for particular vehicle
+	// for provided period in url params
 	m.Get("/vehicle/:uid", getVehicleFuelInPeriod)
+	// get all fuel entries for particualr fleet
+	// for provided period in url params
 	m.Get("/fleet/:uid", getFleetFuelInPeriod)
 
 	return m
@@ -64,14 +71,21 @@ func response(w http.ResponseWriter, data interface{}, status ...int) {
 
 // on error prepare response and return true
 func isErr(w http.ResponseWriter, scope, action string, err error, status ...int) bool {
-	if err != nil {
-		code := 500
-		log.Print(scope, action).Error(err)
-		if len(status) == 1 {
-			code = status[0]
-		}
-		response(w, err, code)
-		return true
+	if err == nil {
+		return false
 	}
-	return false
+	code := http.StatusInternalServerError
+	// set status code according to
+	// err type/msg
+	switch {
+	case err == ds.ErrNotFound:
+		code = http.StatusNotFound
+	case len(status) == 1:
+		// use provided code status
+		code = status[0]
+	}
+	response(w, err, code)
+
+	log.Print(scope, action).Error(err)
+	return true
 }

@@ -21,9 +21,8 @@ func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	if isErr(w, scope, "decode r.Body", err, 400) {
 		return
 	}
-
-	// @todo get user from jwt
-	uid := "ALKJ-LDKFJ-DLFKJ-DLKFJ"
+	//@todo get uid from jwt
+	uid := "QOIO-EOIL-EIRU-JLKL"
 	// set created time and user
 	fuel.Created(uid)
 	// save object
@@ -40,7 +39,7 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	scope := "api.modifyFuel"
 	oid := c.URLParams["oid"]
 	fuel, err := decodeFuel(r.Body)
-	if isErr(w, scope, "decode r.Body", err, 400) {
+	if isErr(w, scope, "decode r.Body", err) {
 		return
 	}
 	//@todo get uid from jwt
@@ -54,9 +53,21 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	response(w, fuel)
 }
 
-// delete entry
+// delete entry, soft delete used
+// object not removed from storage
 func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
-	response(w, "fuel entry removed", 204)
+	scope := "api.defFuel"
+	fuel := object.Fuel{}
+	oid := c.URLParams["oid"]
+	//@todo get uid from jwt
+	uid := "QOIO-EOIL-EIRU-JLKL"
+	fuel.Deleted(uid)
+	err := ds.UpdateById(&fuel, oid)
+	if isErr(w, scope, "UpdateById", err) {
+		return
+	}
+
+	response(w, http.StatusNoContent)
 }
 
 // get entry
@@ -65,7 +76,7 @@ func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel := object.Fuel{}
 	oid := c.URLParams["oid"]
 	err := ds.FindById(&fuel, oid)
-	if isErr(w, scope, "FindById", err, 404) {
+	if isErr(w, scope, "FindById", err) {
 		return
 	}
 

@@ -15,6 +15,8 @@ var (
 	mgoDbName string
 	// @todo use singleton or sync.Once
 	msess *mgo.Session // mongo session
+	// errors
+	ErrNotFound = mgo.ErrNotFound
 )
 
 type MongoAdapter interface {
