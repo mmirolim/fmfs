@@ -1,17 +1,15 @@
-package main
+package api
 
 import (
-	"flag"
-	"fm-fuel-service/api"
 	"fm-fuel-service/conf"
 	"fm-fuel-service/datastore"
 	"fm-fuel-service/log"
 	"fm-fuel-service/object"
-
-	"github.com/zenazn/goji"
+	"os"
+	"testing"
 )
 
-func init() {
+func TestMain(m *testing.M) {
 	// run before main
 	log.Start()
 	// set configs
@@ -23,17 +21,6 @@ func init() {
 	if err != nil {
 		log.Print("main.init", "datasore.Initialize").Fatal(err)
 	}
-}
 
-func main() {
-	// get goji mux from api package
-	mux := api.New()
-	// set goji server port
-	flag.Set("bind", "localhost:4001")
-	// set JSON middleware
-	goji.Use(api.JSON)
-	// register routes
-	goji.Handle("/*", mux)
-	/// start server
-	goji.Serve()
+	os.Exit(m.Run())
 }
