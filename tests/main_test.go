@@ -11,6 +11,11 @@ import (
 	"testing"
 )
 
+var (
+	// @todo get from configuration
+	apiHost = "http://localhost:4001"
+)
+
 type apiEndpoint struct {
 	Method, Url string
 }
@@ -43,8 +48,6 @@ func TestMain(m *testing.M) {
 }
 
 func jsonReq(ae apiEndpoint, load interface{}, host ...string) ([]byte, error) {
-	//@todo set port from configuration?
-	apiHost := "http://localhost:4001"
 	// if host provided set it instead of default one
 	if len(host) == 1 {
 		apiHost = host[0]
@@ -55,6 +58,7 @@ func jsonReq(ae apiEndpoint, load interface{}, host ...string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	req, err := http.NewRequest(ae.Method, apiHost+ae.Url, &buf)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -80,7 +84,7 @@ func expectInt(t *testing.T, arg1, arg2 int, msg string) bool {
 	if arg1 == arg2 {
 		return true
 	}
-	t.Errorf("expected %s %s, got %s", msg, arg1, arg2)
+	t.Errorf("expected %s %d, got %d", msg, arg1, arg2)
 	return false
 }
 

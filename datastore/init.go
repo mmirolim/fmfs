@@ -95,7 +95,8 @@ func FindById(doc Document, id string, deletedAlso ...bool) error {
 		return getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
 	}
 	// by default find excludes soft deleted files by field "deletedby"
-	return getColl(sess, doc).Find(bson.M{"_id": bson.ObjectIdHex(id), "deletedby": ""}).One(doc)
+
+	return getColl(sess, doc).Find(bson.M{"_id": bson.ObjectIdHex(id), "base.deletedby": ""}).One(doc)
 }
 
 // save docuemnt to storage
@@ -122,8 +123,6 @@ func UpdateById(doc Document, id string) error {
 }
 
 // delete document from storage
-
-// save docuemnt to storage
 func DelById(doc Document, id string) error {
 	sess := msess.Copy()
 	defer sess.Close()

@@ -60,10 +60,7 @@ func response(w http.ResponseWriter, data interface{}, status ...int) {
 		data = struct{ Err string }{v.Error()}
 	case int:
 		// if http status passed as data for response
-		data = struct{ Msg int }{v}
-	default:
-		// if type we do not expect show as it is
-		data = struct{ Data interface{} }{v}
+		data = struct{ StatusCode int }{v}
 	}
 	// json encode data
 	b, err := json.Marshal(data)

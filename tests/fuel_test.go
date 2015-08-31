@@ -47,16 +47,21 @@ func TestAddFuelApi(t *testing.T) {
 	// if created successfully fuel object should have
 	// CreatedBy and CreatedAt properties set
 	if fuel.CreatedBy == "" || fuel.CreatedAt.Year() == 1 {
-		t.Error("created fuel object should CreatedAt and CreatedBy properties set")
+		t.Error("created fuel object should have CreatedAt and CreatedBy properties set")
 	}
 }
 
 func TestModifyFuelApi(t *testing.T) {
-	fuel := newDummyFuel()
+	fuel, err := addFuel()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// make some change to fuel object
 	fuel.Info = "info-modified"
 	// send fuel json object
 	api := apiModifyFuel.copy()
-	api.suffix(fuel.ID.String())
+	api.suffix(fuel.ID.Hex())
 	// make api request
 	body, err := jsonReq(api, fuel)
 	if err != nil {
@@ -78,45 +83,42 @@ func TestModifyFuelApi(t *testing.T) {
 // test soft delete
 func TestDelFuelApi(t *testing.T) {
 	// first add new fuel
-	fuel := newDummyFuel()
-	// do request to working api server to add fuel
-	body, err := jsonReq(apiAddFuel, fuel)
+	fuel, err := addFuel()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	// get received object
-	fr := object.Fuel{}
-	if err := json.Unmarshal(body, &fr); err != nil {
-		t.Error(err)
-		return
-	}
+
 	// now delete it
 	// do request to working api server
 	api := apiDelFuel.copy()
-	api.suffix(fuel.ID.String())
-	body, err = jsonReq(api, fuel)
+	api.suffix(fuel.ID.Hex())
+	var data struct{ StatusCode int }
+	body, err := jsonReq(api, data)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-
-	if err := json.Unmarshal(body, &fr); err != nil {
+	err = json.Unmarshal(body, &data)
+	if err != nil {
 		t.Error(err)
 		return
 	}
-
+	if expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+		return
+	}
 	// try to get it by api
 	// it should not get it
+	// because it soft deleted
 	api = apiGetFuel.copy()
-	api.suffix(fr.ID.String())
-	resp, err := http.Get(api.Url)
+	api.suffix(fuel.ID.Hex())
+	resp, err := http.Get(apiHost + api.Url)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if expectInt(t, resp.StatusCode, http.StatusNotFound, "http status") {
+	if expectInt(t, http.StatusNotFound, resp.StatusCode, "http status") {
 		return
 	}
 
@@ -129,7 +131,7 @@ func TestDelFuelApi(t *testing.T) {
 // if no arguments passed dummyFuel entry will be used
 func addFuel(fuelObj ...object.Fuel) (object.Fuel, error) {
 	fuel := newDummyFuel()
-	fuelReceived := object.Fuel{}
+	fr := object.Fuel{}
 	// if fuel provided use it
 	if len(fuelObj) == 1 {
 		fuel = fuelObj[0]
@@ -137,10 +139,10 @@ func addFuel(fuelObj ...object.Fuel) (object.Fuel, error) {
 	// do request to working api server
 	body, err := jsonReq(apiAddFuel, fuel)
 	if err != nil {
-		return fuelReceived, err
+		return fr, err
 	}
 
-	err = json.Unmarshal(body, &fuelReceived)
+	err = json.Unmarshal(body, &fr)
 
-	return fuelReceived, err
+	return fr, err
 }

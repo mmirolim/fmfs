@@ -46,8 +46,7 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	if isErr(w, r, "decode r.Body", err) {
 		return
 	}
-	//@todo get uid from jwt
-	uid := "QOIO-EOIL-EIRU-JLKL"
+
 	fuel.Updated(uid)
 	err = ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "ds.UpdateById", err) {
@@ -62,9 +61,14 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel := object.Fuel{}
 	oid := c.URLParams["oid"]
+	err := ds.FindById(&fuel, oid)
+	if isErr(w, r, "FindById", err) {
+		return
+	}
+	// set del fields
 	fuel.Deleted(uid)
+	err = ds.UpdateById(&fuel, oid)
 
-	err := ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "UpdateById", err) {
 		return
 	}
@@ -110,6 +114,7 @@ func unDelFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel := object.Fuel{}
 	oid := c.URLParams["oid"]
+
 	err := ds.FindById(&fuel, oid)
 	if isErr(w, r, "FindById", err) {
 		return
@@ -140,7 +145,7 @@ func decodeFuel(rc io.ReadCloser) (object.Fuel, error) {
 	if err != nil {
 		return fuel, err
 	}
-	err = json.Unmarshal(data, &fuel)
 
+	err = json.Unmarshal(data, &fuel)
 	return fuel, err
 }
