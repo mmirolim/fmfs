@@ -6,6 +6,7 @@ import (
 	"fm-fuel-service/object"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -130,8 +131,16 @@ func getFleetFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 // decode incoming fuel object json
 func decodeFuel(rc io.ReadCloser) (object.Fuel, error) {
 	var fuel object.Fuel
-	err := json.NewDecoder(rc).Decode(&fuel)
+	data, err := ioutil.ReadAll(rc)
 	// release resource
-	rc.Close()
+	// discard rest of input on err
+	defer rc.Close()
+	defer io.Copy(ioutil.Discard, rc)
+
+	if err != nil {
+		return fuel, err
+	}
+	err = json.Unmarshal(data, &fuel)
+
 	return fuel, err
 }
