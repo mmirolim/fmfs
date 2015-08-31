@@ -78,8 +78,9 @@ func EnsureIndex(doc Document) error {
 	return err
 }
 
-// find one document by id
-func FindById(doc Document, id string) error {
+// find one document by id, by default will not find
+// soft deleted documents
+func FindById(doc Document, id string, deletedAlso ...bool) error {
 	sess := msess.Copy()
 	defer sess.Close()
 	// before queries check is id fits otherwise
@@ -87,8 +88,12 @@ func FindById(doc Document, id string) error {
 	if !bson.IsObjectIdHex(id) {
 		return errors.New("id type wrong")
 	}
-
-	return getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
+	// check deletedAlso search set
+	if len(deletedAlso) == 1 && deletedAlso[0] {
+		return getColl(sess, doc).FindId(bson.ObjectIdHex(id)).One(doc)
+	}
+	// by default find excludes soft deleted files by field "deletedby"
+	return getColl(sess, doc).Find(bson.M{"_id": bson.ObjectIdHex(id), "deletedby": ""}).One(doc)
 }
 
 // save docuemnt to storage

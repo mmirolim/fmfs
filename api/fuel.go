@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/zenazn/goji/web"
 )
@@ -17,6 +18,7 @@ var (
 )
 
 // goji handlers for fuel object
+// @todo add routes to get one/many soft deleted entries
 
 // add new fuel entry
 func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -59,9 +61,8 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel := object.Fuel{}
 	oid := c.URLParams["oid"]
-	//@todo get uid from jwt
-	uid := "QOIO-EOIL-EIRU-JLKL"
 	fuel.Deleted(uid)
+
 	err := ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "UpdateById", err) {
 		return
@@ -80,6 +81,28 @@ func delFuelFromStorage(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	response(w, http.StatusNoContent)
+}
+
+// restore soft deleted fuel-entry
+func unDelFuel(c web.C, w http.ResponseWriter, r *http.Request) {
+	var fuel object.Fuel
+	oid := c.URLParams["oid"]
+	err := ds.FindById(&fuel, oid)
+	if isErr(w, r, "FindById", err) {
+		return
+	}
+	// unset deleted values
+	fuel.DeletedBy = ""
+	fuel.DeletedAt = time.Time{}
+	// update system fields
+	fuel.Updated(uid)
+	// update object
+	err = ds.UpdateById(&object.Fuel{}, oid)
+	if isErr(w, r, "UpdateById", err) {
+		return
+	}
+
+	response(w, fuel)
 }
 
 // get entry

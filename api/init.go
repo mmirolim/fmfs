@@ -23,6 +23,8 @@ func New() *web.Mux {
 	m.Delete("/fuel/:oid", delFuel)
 	// delete fuel entry from storage
 	m.Delete("fuel-entries/:oid", delFuelFromStorage)
+	// restore soft deleted object
+	m.Post("/fuel-entries/:oid", unDelFuel)
 	// get on fuel entry
 	m.Get("/fuel/:oid", getFuel)
 	// get all fuel entries for particular vehicle
@@ -86,7 +88,7 @@ func isErr(w http.ResponseWriter, r *http.Request, action string, err error, res
 	}
 
 	// get request method and url escaped path as err scope
-	scope := r.Method + ">>" + r.URL.EscapedPath()
+	scope := r.Method + " " + r.URL.EscapedPath()
 	// set default status
 	status := http.StatusInternalServerError
 	// set status code according to
