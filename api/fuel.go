@@ -92,7 +92,9 @@ func delFuelFromStorage(c web.C, w http.ResponseWriter, r *http.Request) {
 func unDelFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	var fuel object.Fuel
 	oid := c.URLParams["oid"]
-	err := ds.FindById(&fuel, oid)
+	// get entry from storage
+	// should let find soft deleted entries
+	err := ds.FindById(&fuel, oid, true)
 	if isErr(w, r, "FindById", err) {
 		return
 	}
@@ -102,7 +104,7 @@ func unDelFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	// update system fields
 	fuel.Updated(uid)
 	// update object
-	err = ds.UpdateById(&object.Fuel{}, oid)
+	err = ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "UpdateById", err) {
 		return
 	}

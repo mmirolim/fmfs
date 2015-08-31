@@ -10,10 +10,12 @@ import (
 )
 
 var (
-	apiGetFuel    = apiEndpoint{"GET", "/fuel/"}
-	apiAddFuel    = apiEndpoint{"POST", "/fuel"}
-	apiModifyFuel = apiEndpoint{"POST", "/fuel/"}
-	apiDelFuel    = apiEndpoint{"DELETE", "/fuel/"}
+	apiGetFuel        = apiEndpoint{"GET", "/fuel/"}
+	apiAddFuel        = apiEndpoint{"POST", "/fuel"}
+	apiModifyFuel     = apiEndpoint{"POST", "/fuel/"}
+	apiDelFuel        = apiEndpoint{"DELETE", "/fuel/"}
+	apiUnDelFuel      = apiEndpoint{"POST", "/fuel-entries/"}
+	apiDelFromStorage = apiEndpoint{"DELETE", "/fuel-entries/"}
 
 	// test user UUID
 	dummyUserID = "069c3cc2-41c1-4ae9-8b08-c80cf6ea12e9"
@@ -74,7 +76,7 @@ func TestModifyFuelApi(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if expectStr(t, fr.Info, fuel.Info, "fuel info") {
+	if !expectStr(t, fr.Info, fuel.Info, "fuel info") {
 		return
 	}
 
@@ -104,7 +106,7 @@ func TestDelFuelApi(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
 		return
 	}
 	// try to get it by api
@@ -118,7 +120,53 @@ func TestDelFuelApi(t *testing.T) {
 		return
 	}
 
-	if expectInt(t, http.StatusNotFound, resp.StatusCode, "http status") {
+	if !expectInt(t, http.StatusNotFound, resp.StatusCode, "http status") {
+		return
+	}
+
+}
+
+// test undel soft deleted entry
+func TestUnDelFuel(t *testing.T) {
+	// create new entry
+	fuel, err := addFuel()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// make api request to soft del it
+	api := apiDelFuel.copy()
+	api.suffix(fuel.ID.Hex())
+	body, err := jsonReq(api, fuel)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	var data struct{ StatusCode int }
+	if err := json.Unmarshal(body, &data); err != nil {
+		t.Error(err)
+		return
+	}
+	// check for correct response
+	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+		return
+	}
+	// now restore soft deleted item
+	api = apiUnDelFuel.copy()
+	api.suffix(fuel.ID.Hex())
+	var fr object.Fuel
+	body, err = jsonReq(api, fr)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if err := json.Unmarshal(body, &fr); err != nil {
+		t.Error(err)
+		return
+	}
+	// check object
+	if fr.UpdatedBy == "" || fr.DeletedBy != "" {
+		t.Errorf("restored object should have deleted properties unset, obj received %+v\n", fr)
 		return
 	}
 
