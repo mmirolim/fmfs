@@ -48,7 +48,7 @@ func TestAddFuelApi(t *testing.T) {
 	}
 	// if created successfully fuel object should have
 	// CreatedBy and CreatedAt properties set
-	if fuel.CreatedBy == "" || fuel.CreatedAt.Year() == 1 {
+	if fuel.CreatedBy == "" || fuel.CreatedAt.IsZero() {
 		t.Error("created fuel object should have CreatedAt and CreatedBy properties set")
 	}
 }
@@ -199,6 +199,44 @@ func TestDelFuelFromStorage(t *testing.T) {
 	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
 		return
 	}
+}
+
+// test get all fuel entries for a vehicle by filldate
+func TestGetVehicleFuelInPeriod(t *testing.T) {
+	quantity := 5
+	fillInterval := 24 * time.Hour
+	// load test data with different filldate
+	fuelEntries := make([]object.Fuel, quantity)
+	// create 5 fuel object
+	// with one day difference of filldate
+	layout := "02 Jan 06 15:04 MST"
+	startDate := "01 Jan 09 15:04 MST"
+	filldate, err := time.Parse(layout, startDate)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for i, _ := range fuelEntries {
+		fuelEntries[i].FillDate = filldate
+		// incr by one date
+		filldate = filldate.Add(fillInterval)
+	}
+	// load data to api
+	for _, v := range fuelEntries {
+		f, err := addFuel(v)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if f.CreatedAt.IsZero() {
+			t.Error("load test data failed")
+			return
+		}
+	}
+
+	// now get fuel entries by vehicle in period
+	// format urlapi + params
+	// ?sd=
 }
 
 // request to add fuel entry to api

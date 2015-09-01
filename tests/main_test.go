@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -71,6 +72,10 @@ func jsonReq(ae apiEndpoint, load interface{}, host ...string) ([]byte, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	// return error if response status code is Internal error
+	if res.StatusCode == http.StatusInternalServerError {
+		return nil, errors.New(res.Status)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
