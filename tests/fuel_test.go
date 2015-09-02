@@ -4,6 +4,7 @@ package tests
 import (
 	"encoding/json"
 	"fm-fuel-service/object"
+	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -16,6 +17,8 @@ var (
 	apiDelFuel        = apiEndpoint{"DELETE", "/fuel/"}
 	apiUnDelFuel      = apiEndpoint{"POST", "/fuel-entries/"}
 	apiDelFromStorage = apiEndpoint{"DELETE", "/fuel-entries/"}
+	apiVehicle        = apiEndpoint{"GET", "/vehicle/"}
+	apiFleet          = apiEndpoint{"GET", "/fleet/"}
 
 	// test user UUID
 	dummyUserID = "069c3cc2-41c1-4ae9-8b08-c80cf6ea12e9"
@@ -210,12 +213,12 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 	// create 5 fuel object
 	// with one day difference of filldate
 	layout := "02 Jan 06 15:04 MST"
-	startDate := "01 Jan 09 15:04 MST"
-	filldate, err := time.Parse(layout, startDate)
+	startDate, err := time.Parse(layout, "01 Jan 09 15:04 MST")
 	if err != nil {
 		t.Error(err)
 		return
 	}
+	filldate := startDate
 	for i, _ := range fuelEntries {
 		fuelEntries[i].FillDate = filldate
 		// incr by one date
@@ -236,7 +239,61 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 
 	// now get fuel entries by vehicle in period
 	// format urlapi + params
-	// ?sd=
+	// ?sd=js.Date.toJson&ed=js.Date.toJson
+	// after start date we have 5 entries with one day difference
+	// let's get 3 of them
+	// exclude startdate and enddate
+	data, err := json.Marshal(startDate.Add(70 * time.Hour))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	ed := string(data) // end date
+	data, err = json.Marshal(startDate.Add(5 * time.Hour))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	sd := string(data) // start date
+	// make api request with params
+	api := apiVehicle.copy()
+	// get fuel object with appropriate vehicle set
+	fuel := newDummyFuel()
+	api.suffix(fuel.Vehicle)
+	api.params(map[string]interface{}{
+		"sd": sd,
+		"ed": ed,
+	})
+	resp, err := http.Get(apiHost + api.Url)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// first check status
+	if !expectInt(t, http.StatusOK, resp.StatusCode, "http status") {
+		return
+	}
+	// then check that we have correct result
+	// array of fuel entries
+	data, err = ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	var fuels []object.Fuel
+	err = json.Unmarshal(data, &fuels)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// check that received object is in correct interval
+	for _, v := range fuels {
+		if !(startDate.Before(v.FillDate) && v.FillDate.Before(filldate)) {
+			t.Error("time interval of received fuel entries for vehicle is wrong")
+			return
+		}
+	}
 }
 
 // request to add fuel entry to api

@@ -8,9 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/zenazn/goji/web"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -127,7 +129,28 @@ func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 
 // get entries for provided period for particular vehicle
 func getVehicleFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "get all fuel entries for period by vehicle")
+	var fuels []object.Fuel
+	vehicleId := c.URLParams["oid"]
+	vals, err := url.ParseQuery(r.URL.RawQuery)
+	if isErr(w, r, "ParseQuery", err) {
+		return
+	}
+
+	var sd, ed time.Time
+	err = json.Unmarshal([]byte(vals.Get("sd")), &sd)
+	err = json.Unmarshal([]byte(vals.Get("ed")), &ed)
+	if isErr(w, r, "unmarshal", err) {
+		return
+	}
+	// find all fuel entries in date interval and fleet
+	query := ds.ByDateInterval("filldate", startDate, endDate)
+	// add vehicle id to search
+	query = append(query, bson.DocElem{Name: "vehicle", Values: bson.M{"$eq": oid}})
+	err := ds.Find(&object.Fuel{}, query).All(&fuels)
+	if isErr(w, r, "Find", err) {
+		return
+	}
+	response(w, fuels)
 }
 
 // get entries for provided period for all vehicles in fleet

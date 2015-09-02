@@ -78,6 +78,39 @@ func EnsureIndex(doc Document) error {
 	return err
 }
 
+// find all documents by query and limit
+func Find(doc Document, query bson.D, limit ...int) *mgo.Iter {
+	// default limit
+	lim := 10000
+	sess := msess.Copy()
+	defer sess.Close()
+
+	if len(limit) == 1 {
+		lim = limit[0]
+	}
+	return getColl(sess, doc).Find(query).Limit(lim).Iter()
+}
+
+// create bson.D document query to find in interval
+func ByDateInterval(fld string, start, end time.Time, deletedAlso ...bool) bson.D {
+	var doc bson.D
+	var elm bson.DocElem
+
+	doc = bson.D{
+		{fld, bson.M{"$gte": start, "$lte": end}},
+	}
+
+	// check deletedAlso if not set search all docs
+	if len(deletedAlso) == 1 && deletedAlso[0] {
+		return doc
+	}
+	// by default search not deleted elements
+	elm = bson.DocElem{Name: "base.deletedby", Value: ""}
+	doc = append(doc, elm)
+
+	return doc
+}
+
 // find one document by id, by default will not find
 // soft deleted documents
 func FindById(doc Document, id string, deletedAlso ...bool) error {
