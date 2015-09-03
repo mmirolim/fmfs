@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	ds "fm-fuel-service/datastore"
 	"fm-fuel-service/object"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -130,23 +129,13 @@ func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 // get entries for provided period for particular vehicle
 func getVehicleFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 	var fuels []object.Fuel
-	vehicleId := c.URLParams["uid"]
-	vals, err := url.ParseQuery(r.URL.RawQuery)
-	if isErr(w, r, "ParseQuery", err) {
+
+	// gen selector for find
+	query, err := queryForPeriod(c, r, "vehicle", "uid", "filldate", "sd", "ed")
+	if isErr(w, r, "queryForPeriod", err) {
 		return
 	}
 
-	var sd, ed time.Time
-	// @todo add limit param to limit number of results
-	err = json.Unmarshal([]byte(vals.Get("sd")), &sd)
-	err = json.Unmarshal([]byte(vals.Get("ed")), &ed)
-	if isErr(w, r, "unmarshal", err) {
-		return
-	}
-	// find all fuel entries in date interval and fleet
-	query := ds.ByDateInterval("filldate", sd, ed)
-	// add vehicle id to search
-	query = append(query, bson.DocElem{Name: "vehicle", Value: vehicleId})
 	// use default limit
 	err = ds.Find(&object.Fuel{}, query).All(&fuels)
 	if isErr(w, r, "Find", err) {
@@ -157,8 +146,48 @@ func getVehicleFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 // get entries for provided period for all vehicles in fleet
+// @todo add limit param
 func getFleetFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "get all fuel entries for period by fleet")
+	var fuels []object.Fuel
+	// gen selector for find
+	query, err := queryForPeriod(c, r, "fleet", "uid", "filldate", "sd", "ed")
+	if isErr(w, r, "queryForPeriod", err) {
+		return
+	}
+	// use default limit
+	err = ds.Find(&object.Fuel{}, query).All(&fuels)
+	if isErr(w, r, "Find", err) {
+		return
+	}
+
+	response(w, fuels)
+}
+
+// get required params from routing url and url params and
+// generate bson.D selector
+// @todo add limit param
+func queryForPeriod(c web.C, r *http.Request, obj, id, fldname, start, end string) (bson.D, error) {
+	// object id
+	oid := c.URLParams[id]
+	// get all urls params from raw query
+	vals, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	var sd, ed time.Time
+	// @todo add limit param to limit number of results
+	err = json.Unmarshal([]byte(vals.Get(start)), &sd)
+	err = json.Unmarshal([]byte(vals.Get(end)), &ed)
+	if err != nil {
+		return nil, err
+	}
+	// find all fuel entries in date interval and fleet
+	query := ds.ByDateInterval(fldname, sd, ed)
+	// add vehicle id to search
+	query = append(query, bson.DocElem{Name: obj, Value: oid})
+
+	return query, err
 }
 
 // decode incoming fuel object json

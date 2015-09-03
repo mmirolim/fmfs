@@ -84,20 +84,27 @@ func jsonReq(ae apiEndpoint, load interface{}, host ...string) ([]byte, error) {
 	return body, err
 }
 
-// expect func to compare and stop execution of test
-func expectInt(t *testing.T, arg1, arg2 int, msg string) bool {
-	if arg1 == arg2 {
-		return true
+// expect func to compare two arguments
+// if equal then it returns false
+// otherwise true
+/*
+if expectInt(t, want, got, what) {
+return
+}
+*/
+func expectInt(t *testing.T, want, got int, what string) bool {
+	if want == got {
+		return false
 	}
-	t.Errorf("expected %s %d, got %d", msg, arg1, arg2)
-	return false
+	t.Errorf("expected %s %d, got %d", what, want, got)
+	return true
 }
 
 // expect func to compare and stop execution of test
-func expectStr(t *testing.T, arg1, arg2 string, msg string) bool {
-	if arg1 == arg2 {
-		return true
+func expectStr(t *testing.T, want, got string, what string) bool {
+	if want == got {
+		return false
 	}
-	t.Errorf("expected %s %s, got %s", msg, arg1, arg2)
-	return false
+	t.Errorf("expected %s %s, got %s", what, want, got)
+	return true
 }

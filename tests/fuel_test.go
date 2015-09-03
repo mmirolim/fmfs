@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/pborman/uuid"
 )
 
 var (
@@ -79,7 +81,7 @@ func TestModifyFuelApi(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if !expectStr(t, fr.Info, fuel.Info, "fuel info") {
+	if expectStr(t, fr.Info, fuel.Info, "fuel info") {
 		return
 	}
 
@@ -109,7 +111,7 @@ func TestDelFuelApi(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+	if expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
 		return
 	}
 	// try to get it by api
@@ -123,7 +125,7 @@ func TestDelFuelApi(t *testing.T) {
 		return
 	}
 
-	if !expectInt(t, http.StatusNotFound, resp.StatusCode, "http status") {
+	if expectInt(t, http.StatusNotFound, resp.StatusCode, "http status") {
 		return
 	}
 
@@ -151,7 +153,7 @@ func TestUnDelFuel(t *testing.T) {
 		return
 	}
 	// check for correct response
-	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+	if expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
 		return
 	}
 	// now restore soft deleted item
@@ -199,7 +201,7 @@ func TestDelFuelFromStorage(t *testing.T) {
 		return
 	}
 	// check for correct response
-	if !expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
+	if expectInt(t, http.StatusNoContent, data.StatusCode, "http status") {
 		return
 	}
 }
@@ -271,7 +273,7 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 		return
 	}
 	// first check status
-	if !expectInt(t, http.StatusOK, resp.StatusCode, "http status") {
+	if expectInt(t, http.StatusOK, resp.StatusCode, "http status") {
 		return
 	}
 	// then check that we have correct result
@@ -300,6 +302,110 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 			return
 		}
 	}
+}
+
+// test get all fuel entries for a fleet by filldate
+func TestGetFleetFuelInPeriod(t *testing.T) {
+	// gen fleet uuid to add fuel entries for
+	// and search it from datastore
+	fleetUUID := uuid.New()
+	quantity := 5
+	fillInterval := 24 * time.Hour
+	// load test data with different filldate
+	fuelEntries := make([]object.Fuel, quantity)
+	// create 5 fuel object
+	// with one day difference of filldate
+	layout := "02 Jan 06 15:04 MST"
+	startDate, err := time.Parse(layout, "01 Jan 09 15:04 MST")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	filldate := startDate
+	for i, _ := range fuelEntries {
+		fuelEntries[i] = newDummyFuel()
+		// set differnt fleet uuid
+		fuelEntries[i].Fleet = fleetUUID
+		fuelEntries[i].FillDate = filldate
+		// incr by one day
+		filldate = filldate.Add(fillInterval)
+	}
+	// load data to api
+	for _, v := range fuelEntries {
+		f, err := addFuel(v)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if f.CreatedAt.IsZero() {
+			t.Error("load test data failed")
+			return
+		}
+	}
+
+	// now get fuel entries by vehicle in period
+	// format urlapi + params
+	// ?sd=js.Date.toJson&ed=js.Date.toJson
+	// after start date we have 5 entries with one day difference
+	// let's get 3 of them
+	// exclude startdate and enddate
+	data, err := json.Marshal(startDate.Add(70 * time.Hour))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	ed := string(data) // end date
+	data, err = json.Marshal(startDate.Add(5 * time.Hour))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	sd := string(data) // start date
+	// make api request with params
+	api := apiFleet.copy()
+	// get fuel object with appropriate fleet uuid
+	api.suffix(fleetUUID)
+	// add params
+	api.params(map[string]interface{}{
+		"sd": sd,
+		"ed": ed,
+	})
+	resp, err := http.Get(apiHost + api.Url)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// first check status
+	if expectInt(t, http.StatusOK, resp.StatusCode, "http status") {
+		return
+	}
+	// then check that we have correct result
+	// array of fuel entries
+	data, err = ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	var fuels []object.Fuel
+	err = json.Unmarshal(data, &fuels)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// check that received object is in correct interval
+	if len(fuels) == 0 {
+		t.Error("resp from api is empty, expected fuel entries by vehicle")
+		return
+	}
+	for _, v := range fuels {
+		if !(v.FillDate.After(startDate) && v.FillDate.Before(filldate)) {
+			t.Error("time interval of received fuel entries for vehicle is wrong")
+			return
+		}
+	}
+
 }
 
 // request to add fuel entry to api
