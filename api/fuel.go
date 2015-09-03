@@ -130,13 +130,14 @@ func getFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 // get entries for provided period for particular vehicle
 func getVehicleFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 	var fuels []object.Fuel
-	vehicleId := c.URLParams["oid"]
+	vehicleId := c.URLParams["uid"]
 	vals, err := url.ParseQuery(r.URL.RawQuery)
 	if isErr(w, r, "ParseQuery", err) {
 		return
 	}
 
 	var sd, ed time.Time
+	// @todo add limit param to limit number of results
 	err = json.Unmarshal([]byte(vals.Get("sd")), &sd)
 	err = json.Unmarshal([]byte(vals.Get("ed")), &ed)
 	if isErr(w, r, "unmarshal", err) {
@@ -145,12 +146,13 @@ func getVehicleFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 	// find all fuel entries in date interval and fleet
 	query := ds.ByDateInterval("filldate", sd, ed)
 	// add vehicle id to search
-	query = append(query, bson.DocElem{Name: "vehicle", Value: bson.M{"$eq": vehicleId}})
+	query = append(query, bson.DocElem{Name: "vehicle", Value: vehicleId})
+	// use default limit
 	err = ds.Find(&object.Fuel{}, query).All(&fuels)
 	if isErr(w, r, "Find", err) {
 		return
 	}
-	fmt.Println("FUEL from API", fuels)
+
 	response(w, fuels)
 }
 

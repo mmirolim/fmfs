@@ -4,7 +4,6 @@ package tests
 import (
 	"encoding/json"
 	"fm-fuel-service/object"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -283,10 +282,9 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	fmt.Println("all fule vehicle data", string(data))
+
 	var fuels []object.Fuel
 	err = json.Unmarshal(data, &fuels)
-	fmt.Println("rec fuels", fuels)
 	if err != nil {
 		t.Error(err)
 		return
