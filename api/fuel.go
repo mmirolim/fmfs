@@ -1,3 +1,6 @@
+/*
+API handlers for managing FUEL entries
+*/
 package api
 
 import (
@@ -14,23 +17,25 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var (
-	//@todo get uid from jwt
-	uid = "QOIO-EOIL-EIRU-JLKL"
-)
-
 // goji handlers for fuel object
 // @todo add routes to get one/many soft deleted entries
 
 // add new fuel entry
 func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
+	userid, err := userID(r)
+	if isErr(w, r, "userID", err) || userid == "" {
+		log(r, "userid missing").Error(err)
+		response(w, "userid missing", http.StatusBadRequest)
+		return
+	}
+
 	// parse post data and decode to fuel object
 	fuel, err := decodeFuel(r.Body)
 	if isErr(w, r, "decode r.Body", err) {
 		return
 	}
 	// set created time and user
-	fuel.Created(uid)
+	fuel.Created(userid)
 	// save object
 	err = ds.Save(&fuel)
 	if isErr(w, r, "save fuel", err) {
@@ -42,13 +47,20 @@ func addFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 
 // modify entry
 func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
+	userid, err := userID(r)
+	if isErr(w, r, "userID", err) || userid == "" {
+		log(r, "userid missing").Error(err)
+		response(w, "userid missing", http.StatusBadRequest)
+		return
+	}
+
 	oid := c.URLParams["oid"]
 	fuel, err := decodeFuel(r.Body)
 	if isErr(w, r, "decode r.Body", err) {
 		return
 	}
 
-	fuel.Updated(uid)
+	fuel.Updated(userid)
 	err = ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "ds.UpdateById", err) {
 		return
@@ -60,14 +72,22 @@ func modifyFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 // delete entry, soft delete used
 // object not removed from storage
 func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
-	fuel := object.Fuel{}
+	userid, err := userID(r)
+	if isErr(w, r, "userID", err) || userid == "" {
+		log(r, "userid missing").Error(err)
+		response(w, "userid missing", http.StatusBadRequest)
+		return
+	}
+	var fuel object.Fuel
 	oid := c.URLParams["oid"]
-	err := ds.FindById(&fuel, oid)
+	err = ds.FindById(&fuel, oid)
 	if isErr(w, r, "FindById", err) {
 		return
 	}
 	// set del fields
-	fuel.Deleted(uid)
+	fuel.Deleted(userid)
+	// set update flds
+	fuel.Updated(userid)
 	err = ds.UpdateById(&fuel, oid)
 
 	if isErr(w, r, "UpdateById", err) {
@@ -80,22 +100,35 @@ func delFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 // delete entry, soft delete used
 // object not removed from storage
 func delFuelFromStorage(c web.C, w http.ResponseWriter, r *http.Request) {
+	userid, err := userID(r)
+	if isErr(w, r, "userID", err) || userid == "" {
+		log(r, "userid missing").Error(err)
+		response(w, "userid missing", http.StatusBadRequest)
+		return
+	}
 	oid := c.URLParams["oid"]
-	err := ds.DelById(&object.Fuel{}, oid)
+	err = ds.DelById(&object.Fuel{}, oid)
 	if isErr(w, r, "DelById", err) {
 		return
 	}
-
+	// @todo send event that fuel entry permanantly
+	// deleted by userid
 	response(w, http.StatusNoContent)
 }
 
 // restore soft deleted fuel-entry
 func unDelFuel(c web.C, w http.ResponseWriter, r *http.Request) {
+	userid, err := userID(r)
+	if isErr(w, r, "userID", err) || userid == "" {
+		log(r, "userid missing").Error(err)
+		response(w, "userid missing", http.StatusBadRequest)
+		return
+	}
 	var fuel object.Fuel
 	oid := c.URLParams["oid"]
 	// get entry from storage
 	// should let find soft deleted entries
-	err := ds.FindById(&fuel, oid, true)
+	err = ds.FindById(&fuel, oid, true)
 	if isErr(w, r, "FindById", err) {
 		return
 	}
@@ -103,7 +136,7 @@ func unDelFuel(c web.C, w http.ResponseWriter, r *http.Request) {
 	fuel.DeletedBy = ""
 	fuel.DeletedAt = time.Time{}
 	// update system fields
-	fuel.Updated(uid)
+	fuel.Updated(userid)
 	// update object
 	err = ds.UpdateById(&fuel, oid)
 	if isErr(w, r, "UpdateById", err) {
@@ -161,6 +194,18 @@ func getFleetFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	response(w, fuels)
+}
+
+// get user id (param key is userid) from url param
+// user id must be UUID
+func userID(r *http.Request) (string, error) {
+	// get all urls params from raw query
+	vals, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return "", err
+	}
+
+	return vals.Get("userid"), nil
 }
 
 // get required params from routing url and url params and

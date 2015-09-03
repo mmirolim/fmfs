@@ -13,6 +13,8 @@ import (
 )
 
 var (
+	// api endpoints with method and url without IDs
+	// it has methods to add IDS and params
 	apiGetFuel        = apiEndpoint{"GET", "/fuel/"}
 	apiAddFuel        = apiEndpoint{"POST", "/fuel"}
 	apiModifyFuel     = apiEndpoint{"POST", "/fuel/"}
@@ -43,6 +45,8 @@ func newDummyFuel() object.Fuel {
 	}
 	return fuel
 }
+
+// test adding new fuel entry to fuel collection
 func TestAddFuelApi(t *testing.T) {
 	// should return received fuel json object
 	// unmarshaled to fuel object
@@ -58,6 +62,7 @@ func TestAddFuelApi(t *testing.T) {
 	}
 }
 
+// test modifing fuel entry
 func TestModifyFuelApi(t *testing.T) {
 	fuel, err := addFuel()
 	if err != nil {
@@ -69,6 +74,7 @@ func TestModifyFuelApi(t *testing.T) {
 	// send fuel json object
 	api := apiModifyFuel.copy()
 	api.suffix(fuel.ID.Hex())
+	api.params(map[string]interface{}{"userid": dummyUserID})
 	// make api request
 	body, err := jsonReq(api, fuel)
 	if err != nil {
@@ -100,6 +106,7 @@ func TestDelFuelApi(t *testing.T) {
 	// do request to working api server
 	api := apiDelFuel.copy()
 	api.suffix(fuel.ID.Hex())
+	api.params(map[string]interface{}{"userid": dummyUserID})
 	var data struct{ StatusCode int }
 	body, err := jsonReq(api, data)
 	if err != nil {
@@ -131,7 +138,7 @@ func TestDelFuelApi(t *testing.T) {
 
 }
 
-// test undel soft deleted entry
+// test restore soft deleted entry
 func TestUnDelFuel(t *testing.T) {
 	// create new entry
 	fuel, err := addFuel()
@@ -142,6 +149,7 @@ func TestUnDelFuel(t *testing.T) {
 	// make api request to soft del it
 	api := apiDelFuel.copy()
 	api.suffix(fuel.ID.Hex())
+	api.params(map[string]interface{}{"userid": dummyUserID})
 	body, err := jsonReq(api, fuel)
 	if err != nil {
 		t.Error(err)
@@ -159,6 +167,7 @@ func TestUnDelFuel(t *testing.T) {
 	// now restore soft deleted item
 	api = apiUnDelFuel.copy()
 	api.suffix(fuel.ID.Hex())
+	api.params(map[string]interface{}{"userid": dummyUserID})
 	var fr object.Fuel
 	body, err = jsonReq(api, fr)
 	if err != nil {
@@ -189,6 +198,7 @@ func TestDelFuelFromStorage(t *testing.T) {
 	// make api request to soft del it
 	api := apiDelFromStorage.copy()
 	api.suffix(fuel.ID.Hex())
+	api.params(map[string]interface{}{"userid": dummyUserID})
 	body, err := jsonReq(api, fuel)
 	if err != nil {
 		t.Error(err)
@@ -379,7 +389,7 @@ func TestGetFleetFuelInPeriod(t *testing.T) {
 	if expectInt(t, http.StatusOK, resp.StatusCode, "http status") {
 		return
 	}
-	// then check that we have correct result
+	// then check that we phave correct result
 	// array of fuel entries
 	data, err = ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
@@ -422,7 +432,10 @@ func addFuel(fuelObj ...object.Fuel) (object.Fuel, error) {
 	}
 
 	// do request to working api server
-	body, err := jsonReq(apiAddFuel, fuel)
+	// pass user id in url
+	api := apiAddFuel.copy()
+	api.params(map[string]interface{}{"userid": dummyUserID})
+	body, err := jsonReq(api, fuel)
 	if err != nil {
 		return fr, err
 	}

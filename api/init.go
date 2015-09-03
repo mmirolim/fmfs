@@ -3,10 +3,10 @@ package api
 import (
 	"encoding/json"
 	ds "fm-fuel-service/datastore"
-	"fm-fuel-service/log"
 	"fmt"
 	"net/http"
 
+	logger "github.com/Sirupsen/logrus"
 	"github.com/zenazn/goji/web"
 )
 
@@ -101,4 +101,12 @@ func isErr(w http.ResponseWriter, r *http.Request, action string, err error, res
 
 	log.Print(scope, action).Error(err)
 	return true
+}
+
+// log for handlers
+func log(r *http.Request, action string) *logger.Entry {
+	// get request method and url escaped path as err scope
+	scope := r.Method + " " + r.URL.EscapedPath()
+
+	return log.Print(scope, action)
 }
