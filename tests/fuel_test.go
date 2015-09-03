@@ -4,6 +4,7 @@ package tests
 import (
 	"encoding/json"
 	"fm-fuel-service/object"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -220,8 +221,9 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 	}
 	filldate := startDate
 	for i, _ := range fuelEntries {
+		fuelEntries[i] = newDummyFuel()
 		fuelEntries[i].FillDate = filldate
-		// incr by one date
+		// incr by one day
 		filldate = filldate.Add(fillInterval)
 	}
 	// load data to api
@@ -281,15 +283,21 @@ func TestGetVehicleFuelInPeriod(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	fmt.Println("all fule vehicle data", string(data))
 	var fuels []object.Fuel
 	err = json.Unmarshal(data, &fuels)
+	fmt.Println("rec fuels", fuels)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	// check that received object is in correct interval
+	if len(fuels) == 0 {
+		t.Error("resp from api is empty, expected fuel entries by vehicle")
+		return
+	}
 	for _, v := range fuels {
-		if !(startDate.Before(v.FillDate) && v.FillDate.Before(filldate)) {
+		if !(v.FillDate.After(startDate) && v.FillDate.Before(filldate)) {
 			t.Error("time interval of received fuel entries for vehicle is wrong")
 			return
 		}
@@ -308,6 +316,7 @@ func addFuel(fuelObj ...object.Fuel) (object.Fuel, error) {
 	if len(fuelObj) == 1 {
 		fuel = fuelObj[0]
 	}
+
 	// do request to working api server
 	body, err := jsonReq(apiAddFuel, fuel)
 	if err != nil {

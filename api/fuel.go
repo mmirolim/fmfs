@@ -143,13 +143,14 @@ func getVehicleFuelInPeriod(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// find all fuel entries in date interval and fleet
-	query := ds.ByDateInterval("filldate", startDate, endDate)
+	query := ds.ByDateInterval("filldate", sd, ed)
 	// add vehicle id to search
-	query = append(query, bson.DocElem{Name: "vehicle", Values: bson.M{"$eq": oid}})
-	err := ds.Find(&object.Fuel{}, query).All(&fuels)
+	query = append(query, bson.DocElem{Name: "vehicle", Value: bson.M{"$eq": vehicleId}})
+	err = ds.Find(&object.Fuel{}, query).All(&fuels)
 	if isErr(w, r, "Find", err) {
 		return
 	}
+	fmt.Println("FUEL from API", fuels)
 	response(w, fuels)
 }
 

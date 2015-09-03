@@ -1,8 +1,10 @@
 package datastore
 
 import (
+	"encoding/json"
 	"errors"
 	"fm-fuel-service/object"
+	"fmt"
 	"strings"
 	"time"
 
@@ -96,8 +98,16 @@ func ByDateInterval(fld string, start, end time.Time, deletedAlso ...bool) bson.
 	var doc bson.D
 	var elm bson.DocElem
 
+	data, err := json.Marshal(start)
+	sd := fmt.Sprintf("ISODate(%s)", string(data))
+	data, err = json.Marshal(end)
+	ed := fmt.Sprintf("ISODate(%s)", string(data))
+	if err != nil {
+		return doc
+	}
+	fmt.Println("sd, ed from ds.init()", sd, ed)
 	doc = bson.D{
-		{fld, bson.M{"$gte": start, "$lte": end}},
+		{fld, bson.M{"$gte": sd, "$lte": ed}},
 	}
 
 	// check deletedAlso if not set search all docs
