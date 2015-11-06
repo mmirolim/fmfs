@@ -223,6 +223,9 @@ func queryForPeriod(c web.C, r *http.Request, obj, id, fldname, start, end strin
 	var sd, ed time.Time
 	// @todo add limit param to limit number of results
 	err = json.Unmarshal([]byte(vals.Get(start)), &sd)
+	if err != nil {
+		return nil, err
+	}
 	err = json.Unmarshal([]byte(vals.Get(end)), &ed)
 	if err != nil {
 		return nil, err
